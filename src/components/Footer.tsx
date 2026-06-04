@@ -6,48 +6,91 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
+  // Hide footer on profile page to match existing behavior
   if (pathname === '/profile') return null;
 
   return (
-    <footer className="w-full mt-ds-xxl bg-surface-container dark:bg-surface-container-highest">
-      <div className="flex flex-col md:flex-row justify-between items-start px-ds-gutter py-ds-xl max-w-7xl mx-auto gap-ds-lg">
-        <div className="space-y-ds-md max-w-xs">
-          <div className="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed-dim">DocRayting</div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-secondary-fixed-variant">
-            Making healthcare accessible and efficient for everyone. Your health, our priority.
+    <footer className="bg-surface-container border-t border-outline-variant py-xl mt-xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-lg px-margin-desktop max-w-7xl mx-auto">
+        {/* Brand Column */}
+        <div className="col-span-2 md:col-span-1">
+          <div className="font-headline-md text-headline-md font-bold text-primary mb-md">
+            DocRayting
+          </div>
+          <p className="text-on-surface-variant font-body-sm text-body-sm mb-lg leading-relaxed">
+            Precision healthcare search engine empowering patients with verified data, real ratings, and instant booking at top-tier facilities.
           </p>
-          <div className="flex gap-ds-md">
-            <Link className="text-primary hover:scale-110 transition-transform" href="#"><span className="material-symbols-outlined">public</span></Link>
-            <Link className="text-primary hover:scale-110 transition-transform" href="#"><span className="material-symbols-outlined">alternate_email</span></Link>
-            <Link className="text-primary hover:scale-110 transition-transform" href="#"><span className="material-symbols-outlined">share</span></Link>
-          </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-ds-xl w-full md:w-auto">
-          <div className="space-y-ds-sm">
-            <h6 className="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider">Contact Info</h6>
-            <ul className="space-y-ds-xs">
-              <li><Link className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-secondary-fixed-variant hover:underline transition-all" href="#">Support Center</Link></li>
-              <li><Link className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-secondary-fixed-variant hover:underline transition-all" href="#">Emergency Hotlines</Link></li>
-            </ul>
-          </div>
-          <div className="space-y-ds-sm">
-            <h6 className="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider">Quick Links</h6>
-            <ul className="space-y-ds-xs">
-              <li><Link className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-secondary-fixed-variant hover:underline transition-all" href="/booking">Find Doctors</Link></li>
-              <li><Link className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-secondary-fixed-variant hover:underline transition-all" href="#">Medical Blogs</Link></li>
-            </ul>
-          </div>
-          <div className="space-y-ds-sm">
-            <h6 className="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider">Legal</h6>
-            <ul className="space-y-ds-ds-xs">
-              <li><Link className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-secondary-fixed-variant hover:underline transition-all" href="#">Privacy Policy</Link></li>
-              <li><Link className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-secondary-fixed-variant hover:underline transition-all" href="#">Terms of Service</Link></li>
-            </ul>
+
+        {/* Platform Column */}
+        <div>
+          <h4 className="font-label-md text-label-md text-on-surface font-semibold mb-md">Platform</h4>
+          <ul className="space-y-sm">
+            <li>
+              <Link href="/find-doctors" className="text-on-surface-variant font-label-sm text-label-sm hover:text-primary hover:underline underline-offset-4 transition-all">
+                Search Specialists
+              </Link>
+            </li>
+            <li>
+              <Link href="/clinics" className="text-on-surface-variant font-label-sm text-label-sm hover:text-primary hover:underline underline-offset-4 transition-all">
+                Partner Clinics
+              </Link>
+            </li>
+            <li>
+              <Link href="/pharmacies" className="text-on-surface-variant font-label-sm text-label-sm hover:text-primary hover:underline underline-offset-4 transition-all">
+                Access Pharmacies
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* Resources Column */}
+        <div>
+          <h4 className="font-label-md text-label-md text-on-surface font-semibold mb-md">Resources</h4>
+          <ul className="space-y-sm">
+            <li>
+              <Link href="/booking" className="text-on-surface-variant font-label-sm text-label-sm hover:text-primary hover:underline underline-offset-4 transition-all">
+                AI Symptom Assistant
+              </Link>
+            </li>
+            <li>
+              <a href="#" className="text-on-surface-variant font-label-sm text-label-sm hover:text-primary hover:underline underline-offset-4 transition-all">
+                Doctor Schedules (Closed)
+              </a>
+            </li>
+            <li>
+              <a href="#" className="text-on-surface-variant font-label-sm text-label-sm hover:text-primary hover:underline underline-offset-4 transition-all">
+                Patient Portal
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        {/* Contact/Social Column */}
+        <div>
+          <h4 className="font-label-md text-label-md text-on-surface font-semibold mb-md">Contact Us</h4>
+          <p className="text-on-surface-variant font-body-sm text-body-sm mb-sm">
+            support@docrayting.com
+          </p>
+          <div className="flex gap-sm mt-md">
+            <span className="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors text-[22px]">
+              social_leaderboard
+            </span>
+            <span className="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors text-[22px]">
+              share
+            </span>
+            <span className="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors text-[22px]">
+              public
+            </span>
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-ds-gutter py-ds-lg border-t border-outline-variant/30 text-center">
-        <p className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-secondary-fixed-variant">© 2024 DocRayting. All rights reserved.</p>
+
+      {/* Footer Bottom */}
+      <div className="max-w-7xl mx-auto px-margin-desktop mt-xl pt-lg border-t border-outline-variant/30 text-center">
+        <p className="text-on-surface-variant font-body-sm text-body-sm opacity-60">
+          © {new Date().getFullYear()} DocRayting. Advanced Precision Healthcare. All rights reserved.
+        </p>
       </div>
     </footer>
   );

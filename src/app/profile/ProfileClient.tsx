@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateAppointmentStatus, updateUser } from '@/app/actions';
@@ -11,6 +11,29 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
   const [user, setUser] = useState(initialUser);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(initialUser);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setImagePreview(base64);
+      setEditForm((prev: any) => ({ ...prev, image: base64 }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+
+  const openEditWithPhoto = () => {
+    setIsEditing(true);
+    setTimeout(() => fileInputRef.current?.click(), 100);
+  };
 
   const upcomingAppointments = appointments.filter(a => a.status === 'PENDING' || a.status === 'CONFIRMED');
   const historyAppointments = appointments.filter(a => a.status === 'COMPLETED' || a.status === 'CANCELLED');
@@ -39,11 +62,25 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
   };
 
   return (
-    <div className="bg-background text-on-background font-body-md min-h-screen flex relative scroll-smooth">
-      {/* Edit Profile Modal */}
+    <div className="bg-background text-on-background font-body-md min-h-screen scroll-smooth">
       {isEditing && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-surface-container-lowest rounded-3xl w-full max-w-lg p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => { setIsEditing(false); setImagePreview(null); }}
+          />
+          {/* Centered Modal Card */}
+          <div 
+            className="fixed left-1/2 top-1/2 bg-surface-container-lowest rounded-3xl p-8 shadow-2xl z-[101] animate-in zoom-in-95 duration-200 overflow-y-auto"
+            style={{ 
+              width: '90%', 
+              maxWidth: '560px', 
+              maxHeight: '90vh',
+              boxSizing: 'border-box',
+              transform: 'translate(-50%, -50%)' 
+            }}
+          >
             <h2 className="text-headline-md font-headline-md text-primary mb-6">Update Profile Information</h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-1">
@@ -91,45 +128,115 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
                   className="w-full px-4 py-3 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                 />
               </div>
+              {/* ── Photo Picker ── */}
               <div className="col-span-2">
-                <label className="block text-label-md font-label-md text-on-surface-variant mb-1">Profile Image URL</label>
-                <input 
-                  type="text" 
-                  value={editForm.image}
-                  onChange={(e) => setEditForm({...editForm, image: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  placeholder="https://..."
-                />
+                <label className="block text-label-md font-label-md text-on-surface-variant mb-3">Profile Photo</label>
+                <div className="flex items-center gap-5">
+                  {/* Preview circle */}
+                  <div
+                    onClick={openFilePicker}
+                    className="relative w-20 h-20 rounded-full overflow-hidden shrink-0 cursor-pointer group ring-4 ring-primary/10 shadow-md"
+                  >
+                    <img
+                      src={imagePreview || editForm.image || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150"}
+                      alt="Preview"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span className="material-symbols-outlined text-white text-[22px]">photo_camera</span>
+                    </div>
+                  </div>
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2 flex-1">
+                    <button
+                      type="button"
+                      onClick={openFilePicker}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-primary/30 text-primary font-semibold text-sm hover:border-primary hover:bg-primary/5 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">add_photo_alternate</span>
+                      Galereyadan tanlash
+                    </button>
+                    {imagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => { setImagePreview(null); setEditForm({...editForm, image: user.image}); }}
+                        className="w-full text-center text-xs text-error hover:underline"
+                      >
+                        Bekor qilish
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {/* Quick avatars */}
+                <div className="mt-4">
+                  <p className="text-xs text-on-surface-variant mb-2 font-semibold">Yoki tayyor avatardan tanlang:</p>
+                  <div className="flex gap-3 flex-wrap">
+                    {[
+                      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+                      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
+                      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
+                      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150"
+                    ].map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`Avatar ${i+1}`}
+                        onClick={() => { setImagePreview(null); setEditForm({...editForm, image: url}); }}
+                        className={`w-12 h-12 rounded-full cursor-pointer object-cover border-2 transition-all ${
+                          editForm.image === url && !imagePreview ? 'border-primary scale-110 shadow-md ring-2 ring-primary/20' : 'border-transparent hover:scale-105 hover:border-primary/40'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex gap-4 mt-10">
+            <div className="flex gap-4 mt-8">
               <button 
-                onClick={() => setIsEditing(false)}
+                onClick={() => { setIsEditing(false); setImagePreview(null); }}
                 className="flex-1 px-6 py-3 rounded-xl text-label-md font-semibold border border-outline-variant hover:bg-surface-container transition-all"
               >
-                Cancel
+                Bekor qilish
               </button>
               <button 
-                onClick={handleSaveProfile}
+                onClick={async () => { await handleSaveProfile(); setImagePreview(null); }}
                 className="flex-1 px-6 py-3 rounded-xl text-label-md font-semibold bg-primary text-on-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
               >
-                Save Profile
+                Saqlash ✓
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
+
+      {/* Main Flex Layout */}
+      <div className="flex relative min-h-screen">
+        {/* Hidden file input for gallery access */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageFileChange}
+        />
 
       {/* SideNavBar */}
       <nav className="bg-surface-container-lowest border-r border-surface-container-high docked left-0 h-screen w-72 sticky top-0 flex-col py-stack-lg px-stack-md gap-stack-sm hidden md:flex z-40">
         <div className="mb-stack-lg flex flex-col items-center">
-          <div className="group relative">
-            <div className="w-24 h-24 rounded-full overflow-hidden mb-stack-sm ring-4 ring-primary/10 shadow-sm transition-transform duration-300 group-hover:scale-105">
-              <img alt="Patient Profile" className="w-full h-full object-cover" src={user.image} />
+          <div className="group relative cursor-pointer" onClick={openEditWithPhoto}>
+            <div className="w-24 h-24 rounded-full overflow-hidden mb-stack-sm ring-4 ring-primary/10 shadow-sm transition-transform duration-300 group-hover:scale-105 relative">
+              <img 
+                alt="Patient Profile" 
+                className="w-full h-full object-cover" 
+                src={user.image || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150"} 
+                onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" }}
+              />
+              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span className="material-symbols-outlined text-white text-[24px]">photo_camera</span>
+                <span className="text-[9px] text-white font-bold uppercase tracking-wider mt-0.5">Change</span>
+              </div>
             </div>
-            <button onClick={() => setIsEditing(true)} className="absolute bottom-2 right-0 bg-primary text-on-primary p-1.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="material-symbols-outlined text-[18px]">edit</span>
-            </button>
           </div>
           <h2 className="text-headline-md font-bold text-primary">{user.firstName} {user.lastName}</h2>
           <p className="text-label-md text-on-surface-variant font-medium">Patient ID: #88291</p>
@@ -194,16 +301,28 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-2xl -ml-32 -mb-32"></div>
             
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl overflow-hidden shrink-0 ring-4 ring-white/20 shadow-2xl">
-                <img alt="Patient Avatar" className="w-full h-full object-cover" src={user.image} />
+              <div 
+                onClick={openEditWithPhoto}
+                className="w-32 h-32 md:w-40 md:h-40 rounded-3xl overflow-hidden shrink-0 ring-4 ring-white/20 shadow-2xl relative group cursor-pointer"
+              >
+                <img 
+                  alt="Patient Avatar" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                  src={user.image || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150"} 
+                  onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" }}
+                />
+                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span className="material-symbols-outlined text-white text-[32px]">photo_camera</span>
+                  <span className="text-[11px] text-white font-bold uppercase tracking-wider">Change Photo</span>
+                </div>
               </div>
-              <div className="flex-1 text-center md:text-left">
+              <div className="w-full text-center md:text-left">
                 <div className="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-label-sm font-medium mb-4 backdrop-blur-md border border-white/10">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                   Active Patient
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight">{user.firstName} {user.lastName}</h1>
-                <p className="text-white/80 text-lg max-w-xl mb-6">Welcome back to your health portal. You have {upcomingAppointments.length} upcoming consultations this week.</p>
+                <p className="text-white/80 text-lg w-full max-w-[600px] mb-6 mx-auto md:mx-0">Welcome back to your health portal. You have {upcomingAppointments.length} upcoming consultations this week.</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-4">
                   <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
                     <span className="material-symbols-outlined text-[20px]">mail</span>
@@ -213,6 +332,10 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
                     <span className="material-symbols-outlined text-[20px]">phone</span>
                     <span className="font-medium">{user.phone}</span>
                   </div>
+                  <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl backdrop-blur-md font-bold transition-all cursor-pointer">
+                    <span className="material-symbols-outlined text-[20px]">edit</span>
+                    <span>Edit Profile</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -382,6 +505,7 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }
