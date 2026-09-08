@@ -11,18 +11,22 @@ export const metadata: Metadata = {
   description: "Access fast and reliable medical care from the comfort of your home. Find top-rated specialists and manage your health journey in just a few clicks.",
 };
 
-export default function RootLayout({
+import { getCurrentUser } from '@/app/actions';
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="en">
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body className={inter.className}>
-        <Header />
+        <Header user={user} />
         {children}
         <Footer />
       </body>

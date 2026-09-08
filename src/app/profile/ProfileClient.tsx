@@ -3,9 +3,39 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { updateAppointmentStatus, updateUser } from '@/app/actions';
+import { updateAppointmentStatus, updateUser, logoutUser, addReview } from '@/app/actions';
 
-export default function ProfileClient({ initialAppointments, doctors, initialUser }: { initialAppointments: any[], doctors: any[], initialUser: any }) {
+export default function ProfileClient({ initialAppointments, doctors, initialUser, currentUser, approvedDoctors, approvedSurgeons }: { 
+  initialAppointments: any[], 
+  doctors: any[], 
+  initialUser: any, 
+  currentUser: any,
+  approvedDoctors: any[],
+  approvedSurgeons: any[]
+}) {
+  // Review state
+  const [showReviewPanel, setShowReviewPanel] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ doctorId: '', stars: 5, comment: '', type: 'doctor' });
+  const [reviewMsg, setReviewMsg] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewForm.doctorId) { setReviewMsg('Shifokor ID kiritilmadi.'); return; }
+    setReviewLoading(true);
+    const payload: any = { stars: reviewForm.stars, comment: reviewForm.comment };
+    if (reviewForm.type === 'doctor') payload.doctorProfileId = parseInt(reviewForm.doctorId);
+    else payload.surgeonProfileId = parseInt(reviewForm.doctorId);
+    const res = await addReview(payload);
+    if (res.error) setReviewMsg('Xatolik: ' + res.error);
+    else { setReviewMsg('Sharh yuborildi! Rahmat! ⭐'); setReviewForm({ ...reviewForm, comment: '', doctorId: '' }); }
+    setReviewLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    router.push('/');
+  };
   const router = useRouter();
   const [appointments, setAppointments] = useState(initialAppointments);
   const [user, setUser] = useState(initialUser);
@@ -260,6 +290,13 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
             <span className="text-label-md">Favorite Doctors</span>
           </Link>
           <button 
+            onClick={() => setShowReviewPanel(!showReviewPanel)}
+            className={`${showReviewPanel ? 'bg-tertiary/10 text-tertiary' : 'text-on-surface-variant hover:bg-surface-container-low'} rounded-xl flex items-center p-3 gap-3 transition-all w-full text-left`}
+          >
+            <span className="material-symbols-outlined">rate_review</span>
+            <span className="text-label-md">Sharh & Baho</span>
+          </button>
+          <button 
             onClick={() => setIsEditing(true)}
             className="text-on-surface-variant hover:bg-surface-container-low rounded-xl flex items-center p-3 gap-3 transition-all w-full text-left"
           >
@@ -279,10 +316,10 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
             <span className="material-symbols-outlined">contact_support</span>
             <span className="text-label-md">Support</span>
           </Link>
-          <Link className="text-error hover:bg-error/10 rounded-xl flex items-center p-3 gap-3 transition-all" href="/">
+          <button onClick={handleLogout} className="text-error hover:bg-error/10 rounded-xl flex items-center p-3 gap-3 transition-all w-full text-left">
             <span className="material-symbols-outlined">logout</span>
-            <span className="text-label-md">Logout</span>
-          </Link>
+            <span className="text-label-md">Chiqish (Logout)</span>
+          </button>
         </div>
       </nav>
 
@@ -321,8 +358,8 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                   Active Patient
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight">{user.firstName} {user.lastName}</h1>
-                <p className="text-white/80 text-lg w-full max-w-[600px] mb-6 mx-auto md:mx-0">Welcome back to your health portal. You have {upcomingAppointments.length} upcoming consultations this week.</p>
+                <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight">{currentUser?.profile?.firstName || user.firstName} {currentUser?.profile?.lastName || user.lastName}</h1>
+                <p className="text-white/80 text-lg w-full max-w-[600px] mb-6 mx-auto md:mx-0">Xush kelibsiz! Sizda {upcomingAppointments.length} ta kelgusi qabul bor. {currentUser?.role === 'PATIENT' ? '🟢 Bemor' : currentUser?.role === 'DOCTOR' ? '🔵 Shifokor' : currentUser?.role === 'SURGEON' ? '🟣 Jarroh' : ''}</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-4">
                   <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
                     <span className="material-symbols-outlined text-[20px]">mail</span>
@@ -478,6 +515,68 @@ export default function ProfileClient({ initialAppointments, doctors, initialUse
                   Update Vitals
                 </button>
               </section>
+
+              {/* Review Section */}
+              {showReviewPanel && (
+                <section className="bg-white rounded-3xl p-8 shadow-xl border border-tertiary/10 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-tertiary/5 rounded-full -mr-12 -mt-12"></div>
+                  <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-tertiary rounded-full"></span>
+                    Shifokorga Baho Berish
+                  </h3>
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-on-surface-variant mb-1">Mutaxassis turi</label>
+                      <select value={reviewForm.type} onChange={e => setReviewForm({...reviewForm, type: e.target.value, doctorId: ''})} className="w-full border border-outline-variant rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none">
+                        <option value="doctor">Shifokor</option>
+                        <option value="surgeon">Jarroh</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-on-surface-variant mb-1">Shifokorni tanlang</label>
+                      {reviewForm.type === 'doctor' ? (
+                        approvedDoctors.length === 0 ? (
+                          <p className="text-sm text-on-surface-variant italic border rounded-xl p-3">Hozircha tasdiqlangan shifokor yo'q.</p>
+                        ) : (
+                          <select value={reviewForm.doctorId} onChange={e => setReviewForm({...reviewForm, doctorId: e.target.value})} className="w-full border border-outline-variant rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" required>
+                            <option value="">— Shifokor tanlang —</option>
+                            {approvedDoctors.map((d: any) => (
+                              <option key={d.id} value={d.id}>{d.firstName} {d.lastName} — {d.specialty} ({d.clinicName})</option>
+                            ))}
+                          </select>
+                        )
+                      ) : (
+                        approvedSurgeons.length === 0 ? (
+                          <p className="text-sm text-on-surface-variant italic border rounded-xl p-3">Hozircha tasdiqlangan jarroh yo'q.</p>
+                        ) : (
+                          <select value={reviewForm.doctorId} onChange={e => setReviewForm({...reviewForm, doctorId: e.target.value})} className="w-full border border-outline-variant rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" required>
+                            <option value="">— Jarroh tanlang —</option>
+                            {approvedSurgeons.map((s: any) => (
+                              <option key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.surgicalField} ({s.clinicName})</option>
+                            ))}
+                          </select>
+                        )
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-on-surface-variant mb-1">Baho (1-5 yulduz)</label>
+                      <div className="flex gap-2">
+                        {[1,2,3,4,5].map(s => (
+                          <button type="button" key={s} onClick={() => setReviewForm({...reviewForm, stars: s})} className={`text-3xl transition-transform hover:scale-110 ${reviewForm.stars >= s ? 'text-amber-400' : 'text-slate-300'}`}>★</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-on-surface-variant mb-1">Fikringiz</label>
+                      <textarea value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} className="w-full border border-outline-variant rounded-xl px-4 py-3 resize-none focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" rows={3} placeholder="Shifokor haqida fikringiz..."></textarea>
+                    </div>
+                    <button type="submit" disabled={reviewLoading} className="w-full bg-tertiary text-on-tertiary py-3 rounded-xl font-bold hover:bg-tertiary/90 transition-all active:scale-[0.98] shadow-lg shadow-tertiary/20 disabled:opacity-50">
+                      {reviewLoading ? 'Yuborilmoqda...' : '⭐ Sharh Yuborish'}
+                    </button>
+                    {reviewMsg && <p className={`text-sm font-semibold ${reviewMsg.includes('Xatolik') ? 'text-error' : 'text-secondary'}`}>{reviewMsg}</p>}
+                  </form>
+                </section>
+              )}
 
               <section id="favorites" className="bg-white rounded-3xl p-8 shadow-[0px_4px_30px_rgba(0,0,0,0.03)] border border-surface-variant/30">
                 <div className="flex justify-between items-center mb-6">

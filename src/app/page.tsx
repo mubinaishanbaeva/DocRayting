@@ -90,38 +90,22 @@ export default function Home() {
             Experience healthcare search built on trust and precision. Access verified specialists, real patient ratings, and instant booking at top-tier medical facilities.
           </p>
 
-          {/* Search Bar */}
-          <form 
-            onSubmit={handleSearchSubmit} 
-            className="bg-surface-container-lowest ambient-shadow rounded-xl p-xs md:p-base max-w-4xl mx-auto flex flex-col md:flex-row items-stretch gap-xs border border-surface-variant/20"
-          >
-            <div className="flex-1 flex items-center px-md border-b md:border-b-0 md:border-r border-outline-variant/30">
-              <span className="material-symbols-outlined text-outline mr-sm">search</span>
-              <input 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-md border-none focus:ring-0 text-on-surface font-body-md bg-transparent outline-none" 
-                placeholder="Specialty, Doctor, or Illness" 
-                type="text"
-              />
-            </div>
-            <div className="flex-1 flex items-center px-md border-b md:border-b-0 md:border-r border-outline-variant/30">
-              <span className="material-symbols-outlined text-outline mr-sm">location_on</span>
-              <input 
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                className="w-full py-md border-none focus:ring-0 text-on-surface font-body-md bg-transparent outline-none" 
-                placeholder="Location" 
-                type="text"
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="bg-primary text-on-primary font-bold px-lg py-md rounded-lg hover:bg-primary-container active:scale-95 transition-all font-label-md"
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link 
+              href="/auth/register" 
+              className="bg-primary text-white font-bold px-8 py-4 rounded-xl hover:bg-primary/90 active:scale-95 transition-all shadow-lg flex items-center gap-2"
             >
-              Search Now
-            </button>
-          </form>
+              <span className="material-symbols-outlined">person_add</span>
+              Ro'yxatdan o'tish
+            </Link>
+            <Link 
+              href="/auth/login" 
+              className="bg-white text-primary border border-primary/20 font-bold px-8 py-4 rounded-xl hover:bg-primary/5 active:scale-95 transition-all shadow-md flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined">login</span>
+              Kirish
+            </Link>
+          </div>
 
           {/* Key Bulletpoints */}
           <div className="mt-lg flex flex-wrap justify-center gap-lg">

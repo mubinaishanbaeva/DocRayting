@@ -6,9 +6,155 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+
+model AuthUser {
+  id           Int       @id @default(autoincrement())
+  phone        String    @unique
+  email        String?   @unique
+  passwordHash String
+  role         String    @default("PATIENT") // PATIENT | DOCTOR | SURGEON | ADMIN
+  status       String    @default("ACTIVE")  // ACTIVE | PENDING | BLOCKED
+  createdAt    DateTime  @default(now())
+
+  patient  Patient?
+  doctor   DoctorProfile?
+  surgeon  SurgeonProfile?
+}
+
+// ─── PATIENT ─────────────────────────────────────────────────────────────────
+
+model Patient {
+  id         Int      @id @default(autoincrement())
+  authUserId Int      @unique
+  authUser   AuthUser @relation(fields: [authUserId], references: [id])
+
+  firstName  String   @default("")
+  lastName   String   @default("")
+  birthDate  String?
+  bloodGroup String?
+  allergies  String?
+  image      String   @default("")
+
+  appointments Appointment[]
+  reviews      Review[]
+}
+
+// ─── DOCTOR PROFILE ──────────────────────────────────────────────────────────
+
+model DoctorProfile {
+  id           Int      @id @default(autoincrement())
+  authUserId   Int      @unique
+  authUser     AuthUser @relation(fields: [authUserId], references: [id])
+
+  firstName    String
+  lastName     String
+  email        String
+  phone        String
+  username     String   @unique
+  specialty    String
+  experience   Int      @default(0)
+  clinicName   String   @default("")
+  bio          String   @default("")
+  image        String   @default("")
+  rating       Float    @default(0)
+  reviewCount  Int      @default(0)
+
+  // approval
+  approvalStatus String @default("PENDING") // PENDING | APPROVED | REJECTED
+  adminNote      String @default("")
+
+  availableToday Boolean @default(false)
+  nextAvailable  String  @default("")
+
+  documents    Document[]
+  appointments Appointment[]
+  reviews      Review[]
+}
+
+// ─── SURGEON PROFILE ─────────────────────────────────────────────────────────
+
+model SurgeonProfile {
+  id              Int      @id @default(autoincrement())
+  authUserId      Int      @unique
+  authUser        AuthUser @relation(fields: [authUserId], references: [id])
+
+  firstName       String
+  lastName        String
+  middleName      String   @default("")
+  email           String
+  phone           String
+  username        String   @unique
+  surgicalField   String   // e.g. "Neurosurgery"
+  experience      Int      @default(0)
+  clinicName      String   @default("")
+  clinicAddress   String   @default("")
+  licenseNumber   String   @unique
+  bio             String   @default("")
+  image           String   @default("")
+  rating          Float    @default(0)
+  reviewCount     Int      @default(0)
+
+  // references
+  ref1Name        String   @default("")
+  ref1Phone       String   @default("")
+  ref2Name        String   @default("")
+  ref2Phone       String   @default("")
+
+  // security
+  securityAnswer  String   @default("")
+
+  // approval
+  approvalStatus  String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  adminNote       String   @default("")
+
+  availableToday  Boolean  @default(false)
+  nextAvailable   String   @default("")
+
+  documents       Document[]
+  reviews         Review[]
+}
+
+// ─── DOCUMENT ────────────────────────────────────────────────────────────────
+
+model Document {
+  id               Int            @id @default(autoincrement())
+  name             String
+  fileUrl          String         // path to public/uploads/
+  docType          String         // "diploma" | "certificate" | "license" | "other"
+  uploadedAt       DateTime       @default(now())
+
+  doctorProfileId  Int?
+  doctorProfile    DoctorProfile?  @relation(fields: [doctorProfileId], references: [id])
+
+  surgeonProfileId Int?
+  surgeonProfile   SurgeonProfile? @relation(fields: [surgeonProfileId], references: [id])
+}
+
+// ─── REVIEW ──────────────────────────────────────────────────────────────────
+
+model Review {
+  id               Int            @id @default(autoincrement())
+  stars            Int            // 1-5
+  comment          String         @default("")
+  createdAt        DateTime       @default(now())
+
+  patientId        Int
+  patient          Patient        @relation(fields: [patientId], references: [id])
+
+  doctorProfileId  Int?
+  doctorProfile    DoctorProfile?  @relation(fields: [doctorProfileId], references: [id])
+
+  surgeonProfileId Int?
+  surgeonProfile   SurgeonProfile? @relation(fields: [surgeonProfileId], references: [id])
+}
+
+// ─── LEGACY (kept for compatibility) ─────────────────────────────────────────
 
 model Doctor {
   id             Int           @id @default(autoincrement())
@@ -23,14 +169,20 @@ model Doctor {
 
 model Appointment {
   id          Int      @id @default(autoincrement())
-  doctorId    Int
-  doctor      Doctor   @relation(fields: [doctorId], references: [id])
-  patientName String
-  patientPhone String
-  date        String
-  time        String
-  status      String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
-  createdAt   DateTime @default(now())
+  doctorId    Int?
+  doctor      Doctor?  @relation(fields: [doctorId], references: [id])
+
+  patientId         Int?
+  patient           Patient?       @relation(fields: [patientId], references: [id])
+  doctorProfileId   Int?
+  doctorProfile     DoctorProfile? @relation(fields: [doctorProfileId], references: [id])
+
+  patientName  String   @default("")
+  patientPhone String   @default("")
+  date         String
+  time         String
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
 }
 
 model User {
@@ -40,5 +192,5 @@ model User {
   email     String   @default("alex.j@example.com")
   phone     String   @default("+1 (555) 123-4567")
   birthDate String?  @default("1995-05-15")
-  image     String   @default("https://lh3.googleusercontent.com/aida-public/AB6AXuA6HJ9NR5x_2dxiaMWMr10pEeILlVplddpztCSRN2x-t4vofsESBlyazi2NvjVWSRAU4x3Z3CgtdJ014HA87Dw3VX6v0rMOE9Q7H_ILD6x2NGNEUiU38X0L_CjZzxIa6VjJ-2a1v4Agislo3aV9af4-QZ_UDWYgqFSeL7Pr6IGfaGhT9qB18XJrdvLOUvptvRjUYUdvOKnxWxvLNyvyx5KqpK8frunGUyjyJuVxWXqvV4beh6I077H3vTVxHq7M0yVhQavbCSphyTAk")
+  image     String   @default("https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150")
 }

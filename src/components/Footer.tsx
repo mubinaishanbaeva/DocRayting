@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
-  // Hide footer on profile page to match existing behavior
-  if (pathname === '/profile') return null;
+  // Hide footer on profile, auth, admin pages
+  if (pathname === '/profile' || pathname.includes('/auth') || pathname.includes('/admin') || pathname.includes('/dashboard')) return null;
 
   return (
     <footer className="bg-surface-container border-t border-outline-variant py-xl mt-xl">
